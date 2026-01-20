@@ -4,6 +4,8 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { prisma } from '@/app/lib/prisma';
 import OrphanedTaskCard from '@/app/ui/tasks/orphaned-task-card';
 
+export const dynamic = 'force-dynamic';
+
 export default async function OrphanedTasksPage() {
   // Fetch all tasks and filter for orphaned ones
   const allTasks = await prisma.task.findMany({

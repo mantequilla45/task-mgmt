@@ -61,129 +61,123 @@ Database Rules:
 
 ### What I Used AI For:
 - **Initial planning**: Understanding PRD requirements and creating implementation roadmap
-- **Next.js patterns**: Learning server actions and streaming patterns from official docs
-- **Database schema**: Generating Prisma models with proper relationships
-- **Server actions boilerplate**: Basic CRUD operations structure in `/lib/actions.ts`
-- **Component templates**: React component structure with TypeScript
-- **Loading states**: Skeleton components for streaming UI
-- **TypeScript types**: Interface definitions for props and data models
-- **Zod schemas**: Initial validation schema setup
-- **DnD library guidance**: Helped me understand @dnd-kit implementation patterns
+- **Database migration**: From SQLite to PostgreSQL/Supabase when connection issues arose
+- **Schema modifications**: Changing from Cascade to SetNull for orphaned tasks feature
+- **Component generation**: React component templates with TypeScript interfaces
+- **Server actions**: CRUD operations structure in `/lib/actions.ts`
+- **Optimistic updates**: Implementation pattern for instant UI feedback
+- **Error handling**: Prisma null query workarounds
+- **Search implementation**: URL-based search with debouncing
+- **Modal components**: Delete confirmation with task handling options
+- **Documentation**: Architecture and workflow documentation
 
 ### What I Coded Manually:
-- **Business logic**: Decisions like cascade delete behavior, validation rules, data flow
-- **UI implementation**: Component styling, layouts, responsive design with Tailwind
-- **Form handling**: Validation logic, error states, success feedback
-- **State management**: React state, optimistic updates, re-rendering logic
-- **Component composition**: How components fit together, prop drilling, event handlers
-- **Data operations**: Filtering tasks by status, sorting logic, data transformations
-- **Error handling**: User-facing error messages, edge case handling
-- **User interactions**: Click handlers, form submissions, navigation logic
-- **Drag-and-drop behavior**: Task status updates via drag-and-drop
-- **Search functionality**: Query parameter handling and filtering logic
-- **Error boundaries**: Custom error boundary components and fallback UI
-- **Form validation**: Zod schema refinements and custom validation rules
+- **Business logic**: Orphaned tasks management, task reassignment
+- **UI implementation**: Task list height management, responsive layouts
+- **State management**: Task state synchronization between server and client
+- **Form handling**: Due date field, assignee field, validation
+- **Drag-and-drop**: Native HTML5 drag/drop implementation
+- **Modal interactions**: Delete board with three options (orphan/transfer/delete)
+- **Search filtering**: Server-side task filtering by title/description/assignee
+- **Pagination**: Board list pagination with URL params
+- **Color coding**: Status-based colors for task columns
+- **Loading states**: Skeleton components for better UX
 
 ### Where AI-Generated Code Needed Fixes:
-- **Prisma client imports**: Had to add proper singleton pattern for production
-- **Server action error handling**: Improved error messages to be more user-friendly
-- **TypeScript types**: Fixed some type inference issues with Prisma queries
-- **Form revalidation**: Added `revalidatePath` calls to refresh data after mutations
-- **Status type safety**: Made sure status enum matched exactly ("todo", "in_progress", "done")
-- **Drag-and-drop state**: Had to refine the onDragEnd handler for proper status updates
-- **Search debouncing**: Added proper URL param handling for search queries
-- **Zod error messages**: Customized validation error messages to be more user-friendly
+- **Prisma null queries**: Had to fetch all and filter in memory instead of `where: { boardId: null }`
+- **SSL certificate errors**: Fixed Supabase connection with proper SSL config
+- **Task placement**: Changed from bottom to top when creating new tasks
+- **Modal backgrounds**: Standardized to `bg-black/50` across all modals
+- **Height overflow**: Fixed task columns exceeding screen height
+- **Search state sync**: Added useEffect to update tasks when search results change
+- **Type mismatches**: Fixed boardId nullable type in multiple components
+- **Optimistic rollback**: Added proper error handling for failed updates
 
 ### How I Fixed Problems:
-- Read TypeScript errors carefully and fixed type mismatches
-- Tested each server action independently before connecting to UI
-- Used Prisma Studio to verify database operations
-- Added console logs to debug server action flows
-- Checked Next.js docs when patterns didn't work as expected
-- Tested drag-and-drop with various edge cases (same column drops, invalid states)
-- Debugged search functionality with different query combinations
-- Verified error boundaries caught all types of errors properly
+- **Database connection**: Switched from SQLite to Supabase PostgreSQL
+- **SSL issues**: Configured proper SSL settings in Prisma client
+- **Null handling**: Implemented workaround for Prisma's null query limitations
+- **State updates**: Added useEffect hooks for prop synchronization
+- **Layout issues**: Used flexbox and overflow properties for proper height management
+- **Type safety**: Updated interfaces to handle nullable boardId
+- **Search functionality**: Fixed by updating local state when initialTasks prop changes
 
 ## Time Management
 
 ### First 30 minutes:
-- Read through PRD completely
-- Created implementation plan with Claude
-- Set up Next.js project with TypeScript and Tailwind
-- Created folder structure and placeholder files
-- Set up Prisma schema and ran initial migration
+- Set up Next.js project with TypeScript
+- Created Prisma schema with Board and Task models
+- Configured Supabase database connection
+- Ran initial migrations
+- Created project structure
 
 ### Next 45 minutes:
-- Built server actions in `/lib/actions.ts` for boards and tasks
-- Created data fetching functions in `/lib/data.ts`
-- Added Zod validation schemas in `/lib/definitions.ts`
-- Tested actions with temporary console logs
-- Set up database queries with Prisma
+- Built server actions for CRUD operations
+- Implemented data fetching functions
+- Created board list dashboard
+- Added board creation functionality
+- Implemented task creation within boards
 
 ### Next 45 minutes:
-- Built Dashboard page (`/dashboard/(overview)/page.tsx`)
-- Created Board detail page (`/dashboard/board/[id]/page.tsx`)
-- Added UI components (board cards, task cards, forms)
-- Implemented create/edit/delete functionality
-- Added loading.tsx with skeleton components
-- Built search functionality with URL params
-- Implemented drag-and-drop for task status changes
-- Added error boundary components
+- Added drag-and-drop for task status changes
+- Implemented search functionality
+- Created delete board modal with options
+- Added optimistic updates for instant feedback
+- Built orphaned tasks management
 
-### Last 20 minutes:
-- Fixed remaining TypeScript errors
-- Tested all CRUD operations end-to-end
-- Verified drag-and-drop works correctly
-- Tested search and filtering
-- Verified error boundaries catch errors
-- Wrote this documentation
-- Quick final polish on styling
+### Last 30 minutes:
+- Fixed height overflow issues
+- Added task reassignment feature
+- Implemented search state synchronization
+- Updated documentation
+- Fixed TypeScript errors
 
 ### What I Skipped:
-- Advanced animations and transitions
-- Complex data analytics dashboard
-- Real-time collaborative updates
-- Comprehensive unit testing
-- Data export functionality (CSV/JSON)
-- Toast notifications for all actions
-- Advanced mobile gestures
+- User authentication system
+- Real-time collaboration
+- File attachments
+- Task comments
+- Activity logs
+- Bulk operations
+- Keyboard shortcuts
+- Mobile gestures
 
 ### If I Had More Time:
-- **Build the analytics dashboard bonus feature** - Show task statistics and completion percentages
-- **Write comprehensive unit tests** - Test coverage for server actions and components
-- **Add real-time updates** - WebSocket integration for multi-user collaboration
-- **Implement data export** - CSV/JSON export functionality for boards and tasks
-- **Add toast notifications** - Better user feedback for all actions
-- **Improve accessibility** - ARIA labels, keyboard navigation, screen reader support
-- **Performance optimization** - Code splitting, lazy loading, caching strategies
-- **Advanced task management** - Task dependencies, subtasks, time tracking
-- **Enhanced UI polish** - Smooth animations, transitions, micro-interactions
-- **Deploy to production** - Set up hosting, environment variables, CI/CD pipeline
+- **Authentication**: Add user accounts with NextAuth.js
+- **Real-time updates**: WebSocket integration for collaboration
+- **Rich text editor**: For task descriptions
+- **File uploads**: Attachments for tasks
+- **Notifications**: Toast messages for all actions
+- **Testing**: Comprehensive test coverage
+- **Performance**: Implement virtual scrolling for long task lists
+- **Analytics**: Task completion metrics and charts
+- **API**: RESTful API for third-party integrations
+- **Mobile app**: React Native companion app
 
 ## Key Learnings
 
 ### Effective AI Usage:
-- Starting with planning instead of jumping straight to code saved time
-- Copying exact requirements into prompts ensures accuracy
-- Breaking work into small, focused tasks works better than big prompts
-- AI is great for boilerplate but needs human oversight for logic
-- Using AI to understand library patterns (like @dnd-kit) accelerated implementation
+- AI excels at boilerplate and pattern implementation
+- Human oversight crucial for business logic decisions
+- Breaking complex problems into smaller prompts works better
+- AI helps quickly identify and fix type errors
+- Documentation generation saves significant time
 
 ### Challenges:
-- Balancing speed with code quality in 2 hours
-- Deciding what to build manually vs with AI assistance
-- Managing time between coding and documentation
-- Implementing drag-and-drop required more manual refinement than expected
-- Ensuring form validation worked both client and server-side
+- Prisma's handling of null values in queries
+- State synchronization between server and client components
+- Height management in CSS for full-screen layouts
+- Type safety with nullable foreign keys
+- Optimistic updates with proper rollback
 
 ### Best Practices Applied:
-- Database-first approach (schema before code)
-- Server actions for data mutations (Next.js best practice)
-- Streaming UI with loading states and Suspense boundaries
-- Progressive enhancement with forms that work without JavaScript
-- Error boundaries to catch and handle errors gracefully
-- Search with URL params for shareable, bookmarkable URLs
-- Zod validation for type-safe form handling
-- Drag-and-drop with @dnd-kit for intuitive task management
-- Keeping components simple and focused on single responsibilities
-- Testing incrementally as I built each feature
+- **PostgreSQL over SQLite**: Better for production scalability
+- **SetNull over Cascade**: Preserves data integrity
+- **Optimistic updates**: Better perceived performance
+- **URL-based search**: Shareable and bookmarkable
+- **Server Actions**: Simplified data mutations
+- **Component composition**: Reusable, focused components
+- **Error boundaries**: Graceful error handling
+- **TypeScript throughout**: Type safety and IntelliSense
+- **Tailwind CSS**: Consistent, responsive styling
+- **Progressive enhancement**: Forms work without JavaScript

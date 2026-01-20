@@ -8,7 +8,7 @@ import { GripVertical, Trash2 } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
-  boardId: string;
+  boardId: string | null;
 }
 
 export default function TaskCard({ task, boardId }: TaskCardProps) {

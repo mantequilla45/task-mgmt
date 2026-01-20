@@ -312,6 +312,27 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'in_prog
   }
 }
 
+export async function assignTaskToBoard(taskId: string, boardId: string) {
+  try {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { boardId },
+    });
+
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/board/orphaned-tasks');
+    revalidatePath(`/dashboard/board/${boardId}`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to assign task to board.',
+      success: false,
+    };
+  }
+}
+
 export async function deleteTask(id: string) {
   try {
     // Get the task to find its boardId for revalidation

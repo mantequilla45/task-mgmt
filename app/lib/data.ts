@@ -18,7 +18,7 @@ type BoardWithTasks = {
     priority: string | null;
     dueDate: Date | null;
     assignedTo: string | null;
-    boardId: string;
+    boardId: string | null;
     createdAt: Date;
     updatedAt: Date;
   }>;
@@ -86,16 +86,14 @@ export async function fetchFilteredBoards(
     // Get total count for pagination  
     const totalCount = await prisma.board.count({ where });
     
-    // Get orphaned tasks count separately
+    // Get orphaned tasks count - fetch all and filter
     let orphanedTasksCount = 0;
     try {
-      const orphanedTasks = await prisma.task.findMany({
-        where: { boardId: null },
-        select: { id: true }
+      const allTasks = await prisma.task.findMany({
+        select: { id: true, boardId: true }
       });
-      orphanedTasksCount = orphanedTasks.length;
-    } catch (e) {
-      // If query fails, default to 0
+      orphanedTasksCount = allTasks.filter(task => task.boardId === null).length;
+    } catch (err) {
       orphanedTasksCount = 0;
     }
     

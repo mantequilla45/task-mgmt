@@ -9,7 +9,7 @@ interface TaskListProps {
   title: string;
   tasks: Task[];
   status: TaskStatus;
-  boardId: string;
+  boardId: string | null;
 }
 
 export default function TaskList({ title, tasks, status, boardId }: TaskListProps) {

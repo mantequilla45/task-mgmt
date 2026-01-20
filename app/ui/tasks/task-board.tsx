@@ -8,21 +8,24 @@ import { updateTaskStatus } from '@/app/lib/actions';
 interface TaskBoardProps {
   initialTasks: Task[];
   boardId: string;
+  onTasksChange?: (tasks: Task[]) => void;
 }
 
-export default function TaskBoard({ initialTasks, boardId }: TaskBoardProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+export default function TaskBoard({ initialTasks, boardId, onTasksChange }: TaskBoardProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   
-  // Update tasks when initialTasks changes (e.g., after adding a new task)
-  useEffect(() => {
-    setTasks(initialTasks);
-  }, [initialTasks]);
-
-  // Add task optimistically
-  const addTaskOptimistically = useCallback((newTask: Task) => {
-    setTasks(prevTasks => [...prevTasks, newTask]);
-  }, []);
+  // Use tasks directly from props - parent manages the state
+  const tasks = initialTasks;
+  
+  const setTasks = useCallback((newTasks: Task[] | ((prev: Task[]) => Task[])) => {
+    if (onTasksChange) {
+      if (typeof newTasks === 'function') {
+        onTasksChange(newTasks(tasks));
+      } else {
+        onTasksChange(newTasks);
+      }
+    }
+  }, [tasks, onTasksChange]);
 
   const tasksByStatus = {
     todo: tasks.filter(task => task.status === 'todo'),
@@ -78,7 +81,7 @@ export default function TaskBoard({ initialTasks, boardId }: TaskBoardProps) {
   }, []);
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-3 h-full">
       <TaskList 
         title="To Do" 
         tasks={tasksByStatus.todo} 

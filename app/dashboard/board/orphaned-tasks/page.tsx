@@ -2,28 +2,23 @@ import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { prisma } from '@/app/lib/prisma';
-import TaskList from '@/app/ui/tasks/task-list';
+import OrphanedTaskCard from '@/app/ui/tasks/orphaned-task-card';
 
 export default async function OrphanedTasksPage() {
-  let tasks: any[] = [];
-  try {
-    tasks = await prisma.task.findMany({
-      where: { boardId: null },
-      orderBy: [
-        { status: 'asc' },
-        { createdAt: 'desc' },
-      ],
-    });
-  } catch (error) {
-    // If query fails due to null handling, try alternative approach
-    const allTasks = await prisma.task.findMany({
-      orderBy: [
-        { status: 'asc' },
-        { createdAt: 'desc' },
-      ],
-    });
-    tasks = allTasks.filter(task => !task.boardId);
-  }
+  // Fetch all tasks and filter for orphaned ones
+  const allTasks = await prisma.task.findMany({
+    orderBy: [
+      { status: 'asc' },
+      { createdAt: 'desc' },
+    ],
+  });
+  
+  const tasks = allTasks.filter(task => task.boardId === null);
+  
+  // Fetch all boards for the assignment dropdown
+  const boards = await prisma.board.findMany({
+    orderBy: { name: 'asc' },
+  });
 
   const mappedTasks = tasks.map(task => ({
     id: task.id,
@@ -37,10 +32,19 @@ export default async function OrphanedTasksPage() {
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   }));
+  
+  const mappedBoards = boards.map(board => ({
+    id: board.id,
+    name: board.name,
+    description: board.description || undefined,
+    color: board.color || undefined,
+    createdAt: board.createdAt.toISOString(),
+    updatedAt: board.updatedAt.toISOString(),
+  }));
 
   return (
-    <main>
-      <div className="mb-6">
+    <main className="h-screen overflow-y-auto">
+      <div className="pb-4">
         <Link href="/dashboard">
           <Button variant="ghost" size="sm" className="mb-4 -ml-2 flex items-center gap-1.5 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -77,7 +81,7 @@ export default async function OrphanedTasksPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="flex flex-col">
+          <div>
             <div className="border-t-2 border-zinc-300 bg-white rounded-t-md px-3 py-2.5 border-x border-b border-zinc-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -89,15 +93,16 @@ export default async function OrphanedTasksPage() {
                 </span>
               </div>
             </div>
-            <div className="bg-zinc-50/50 rounded-b-md border-x border-b border-zinc-200 p-3 min-h-125">
-              <TaskList 
-                tasks={mappedTasks.filter(t => t.status === 'todo')} 
-                boardId={null}
-              />
+            <div className="bg-zinc-50/50 rounded-b-md border-x border-b border-zinc-200 p-3 min-h-[125px] max-h-[600px] overflow-y-auto">
+              <div className="space-y-2">
+                {mappedTasks.filter(t => t.status === 'todo').map((task) => (
+                  <OrphanedTaskCard key={task.id} task={task} boards={mappedBoards} />
+                ))}
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-col">
+          
+          <div>
             <div className="border-t-2 border-blue-400 bg-white rounded-t-md px-3 py-2.5 border-x border-b border-zinc-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -109,15 +114,16 @@ export default async function OrphanedTasksPage() {
                 </span>
               </div>
             </div>
-            <div className="bg-zinc-50/50 rounded-b-md border-x border-b border-zinc-200 p-3 min-h-125">
-              <TaskList 
-                tasks={mappedTasks.filter(t => t.status === 'in_progress')} 
-                boardId={null}
-              />
+            <div className="bg-zinc-50/50 rounded-b-md border-x border-b border-zinc-200 p-3 min-h-[125px] max-h-[600px] overflow-y-auto">
+              <div className="space-y-2">
+                {mappedTasks.filter(t => t.status === 'in_progress').map((task) => (
+                  <OrphanedTaskCard key={task.id} task={task} boards={mappedBoards} />
+                ))}
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-col">
+          
+          <div>
             <div className="border-t-2 border-emerald-400 bg-white rounded-t-md px-3 py-2.5 border-x border-b border-zinc-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -129,11 +135,12 @@ export default async function OrphanedTasksPage() {
                 </span>
               </div>
             </div>
-            <div className="bg-zinc-50/50 rounded-b-md border-x border-b border-zinc-200 p-3 min-h-125">
-              <TaskList 
-                tasks={mappedTasks.filter(t => t.status === 'done')} 
-                boardId={null}
-              />
+            <div className="bg-zinc-50/50 rounded-b-md border-x border-b border-zinc-200 p-3 min-h-[125px] max-h-[600px] overflow-y-auto">
+              <div className="space-y-2">
+                {mappedTasks.filter(t => t.status === 'done').map((task) => (
+                  <OrphanedTaskCard key={task.id} task={task} boards={mappedBoards} />
+                ))}
+              </div>
             </div>
           </div>
         </div>

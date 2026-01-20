@@ -55,7 +55,7 @@ export default function TaskList({
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       <div className={`border-t-2 ${statusColors[status]} bg-white rounded-t-md px-3 py-2.5 border-x border-b border-zinc-200`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -67,14 +67,14 @@ export default function TaskList({
       </div>
       
       <div 
-        className={`bg-white rounded-b-md border-x border-b border-zinc-200 p-3 min-h-125 flex flex-col transition-all ${
+        className={`bg-white rounded-b-md border-x border-b h-[70vh] border-zinc-200 p-3 overflow-y-auto flex flex-col transition-all ${
           isDragOver ? 'bg-zinc-100 ring-2 ring-zinc-400 ring-opacity-50' : ''
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="space-y-2 flex-1">
+        <div className="space-y-2">
           {tasks.map((task) => (
             <TaskCardOptimistic 
               key={task.id} 

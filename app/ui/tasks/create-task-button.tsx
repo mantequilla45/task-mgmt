@@ -56,7 +56,20 @@ export default function CreateTaskButton({ boardId, onTaskCreate }: CreateTaskBu
     
     // Update with real task from server
     if (result.success && result.task && updateWithRealTask) {
-      updateWithRealTask(result.task);
+      // Map the server task to the correct format
+      const mappedTask = {
+        id: result.task.id,
+        boardId: result.task.boardId,
+        title: result.task.title,
+        description: result.task.description || undefined,
+        status: result.task.status.toLowerCase() as any,
+        priority: result.task.priority?.toLowerCase() as any,
+        assignedTo: result.task.assignedTo || undefined,
+        dueDate: result.task.dueDate ? new Date(result.task.dueDate).toISOString() : undefined,
+        createdAt: new Date(result.task.createdAt).toISOString(),
+        updatedAt: new Date(result.task.updatedAt).toISOString(),
+      };
+      updateWithRealTask(mappedTask);
     } else if (!onTaskCreate) {
       // Fallback to refresh if no optimistic callback
       router.refresh();

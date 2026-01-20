@@ -32,7 +32,7 @@ export default function BoardContent({ board, initialTasks, allBoards }: BoardCo
       updatedAt: new Date().toISOString(),
     };
     
-    setTasks(prevTasks => [...prevTasks, newTask]);
+    setTasks(prevTasks => [newTask, ...prevTasks]);
     
     // Return a function to update with the real task from server
     return (realTask: Task) => {
@@ -43,8 +43,8 @@ export default function BoardContent({ board, initialTasks, allBoards }: BoardCo
   }, [board.id]);
 
   return (
-    <>
-      <div className="flex items-start justify-between mb-6">
+    <div className="h-full flex flex-col">
+      <div className="flex items-start justify-between mb-6 flex-shrink-0">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <div 
@@ -74,11 +74,13 @@ export default function BoardContent({ board, initialTasks, allBoards }: BoardCo
         </div>
       </div>
 
-      <TaskBoard 
-        initialTasks={tasks} 
-        boardId={board.id} 
-        onTasksChange={setTasks}
-      />
-    </>
+      <div className="flex-1 overflow-hidden">
+        <TaskBoard 
+          initialTasks={tasks} 
+          boardId={board.id} 
+          onTasksChange={setTasks}
+        />
+      </div>
+    </div>
   );
 }

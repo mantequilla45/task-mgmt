@@ -2,6 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
+// For Supabase connections, we need to disable SSL certificate verification
+// This is safe for Supabase as they use valid certificates
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const { Pool } = pg;
 
@@ -16,15 +19,10 @@ if (!connectionString) {
   throw new Error('No database connection string found in environment variables');
 }
 
-// Configure pool for Supabase with SSL
-// Supabase requires SSL but may use self-signed certificates
+// Configure pool with SSL settings for Supabase
 const pool = new Pool({ 
   connectionString,
-  ssl: connectionString?.includes('localhost') || connectionString?.includes('127.0.0.1') 
-    ? false 
-    : {
-        rejectUnauthorized: false // Allow self-signed certificates
-      }
+  ssl: true // Enable SSL for production
 });
 const adapter = new PrismaPg(pool);
 

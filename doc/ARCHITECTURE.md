@@ -1,43 +1,33 @@
 # Architecture Decisions Document
 
-## Technology Choices
+## Technology Stack
 
-### 1. Why App Router over Pages Router?
+### Core Technologies
+- **Next.js 16.1.3** with App Router and Turbopack
+- **TypeScript 5** for type safety throughout
+- **PostgreSQL** (via Supabase) as the primary database
+- **Prisma ORM 6.2.0** for database access and migrations
+- **Tailwind CSS 3.4** for styling
+- **React 19.0.0** with Server Components
 
-**Decision: Next.js 14 App Router**
+### Key Libraries
+- **Lucide React** - Icon library for consistent UI icons
+- **Zod** - Runtime validation for forms and data
+- **React Hooks** - useState, useCallback, useEffect for client interactivity
 
-Reasons:
-- **Server Components by default**: Better performance with reduced client-side JavaScript
-- **Improved data fetching**: Built-in support for async/await in components
-- **Better layouts**: Nested layouts and error boundaries
-- **Modern React features**: Full support for React 18 features like Suspense
-- **Future-proof**: App Router is the recommended approach for new Next.js projects
+## Database Architecture
 
-### 2. Why SQLite for Database?
+### Database Provider
+**Decision**: PostgreSQL hosted on Supabase
 
-**Decision: SQLite for development**
+**Why**:
+- **Managed service** - No infrastructure management needed
+- **Built-in connection pooling** - Handles concurrent connections efficiently
+- **Real-time capabilities** - Available for future features
+- **Generous free tier** - Perfect for MVP and development
+- **PostgreSQL features** - Full SQL support, JSONB, advanced queries
 
-Reasons:
-- **Zero configuration**: No need to install separate database server
-- **Portability**: Database is a single file, easy to share and version control
-- **Perfect for development**: Fast setup for a 2-hour assessment
-- **Production ready**: Can easily migrate to PostgreSQL/MySQL for production
-- **Prisma support**: Excellent ORM support with type safety
-
-### 3. Why Tailwind CSS for Styling?
-
-**Decision: Tailwind CSS**
-
-Reasons:
-- **Rapid development**: Utility-first approach speeds up development
-- **Consistency**: Built-in design system with consistent spacing and colors
-- **No context switching**: Styles in the same file as components
-- **Small bundle size**: Only includes used styles in production
-- **Great DX**: Excellent IDE support and documentation
-
-## Data Structure Design
-
-### Database Schema Decisions
+### Schema Design
 
 ```prisma
 model Board {
@@ -51,169 +41,319 @@ model Board {
 }
 
 model Task {
-  id        String     @id @default(cuid())
-  boardId   String
-  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  title     String
-  status    TaskStatus @default(TODO)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String    @id @default(cuid())
+  boardId     String?   // Nullable to support orphaned tasks
+  title       String
+  description String?
+  status      TaskStatus // Enum: TODO, IN_PROGRESS, DONE
+  priority    Priority?  // Enum: LOW, MEDIUM, HIGH
+  assignedTo  String?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  board       Board?    @relation(fields: [boardId], references: [id], onDelete: SetNull)
 }
 ```
 
-**Key Decisions:**
+**Key Design Decisions**:
+- **Nullable boardId** - Supports orphaned tasks when boards are deleted
+- **SetNull on delete** - Tasks become orphaned rather than deleted when board is removed
+- **Enums for status/priority** - Type safety at database level
+- **CUID for IDs** - URL-friendly, collision-resistant identifiers
 
-- **CUID for IDs**: More secure than auto-increment, globally unique
-- **Cascade deletion**: When a board is deleted, all its tasks are deleted (better UX)
-- **Status as enum**: Type safety and validation at database level
-- **Timestamps**: Both created and updated times for audit trail
-- **Nullable fields**: Optional fields allow flexibility without breaking existing data
+## Application Architecture
 
-### Why This Structure?
-
-- **One-to-many relationship**: Simple and efficient for this use case
-- **No soft deletes**: Kept simple for the assessment, real deletion is fine
-- **Minimal required fields**: Only essential fields are required, rest optional
-
-## API Design
-
-### RESTful Endpoints Structure
+### Project Structure
 
 ```
-/api/boards
-  GET    - List all boards
-  POST   - Create new board
-
-/api/boards/[id]
-  GET    - Get board with tasks
-  DELETE - Delete board
-
-/api/tasks
-  GET    - Get tasks (with boardId query param)
-  POST   - Create task
-
-/api/tasks/[id]
-  PATCH  - Update task
-  DELETE - Delete task
+/app
+├── dashboard/
+│   ├── (overview)/
+│   │   ├── page.tsx          # Main dashboard with board grid
+│   │   └── loading.tsx       # Loading skeleton
+│   ├── board/
+│   │   ├── [id]/
+│   │   │   ├── page.tsx      # Board detail with kanban view
+│   │   │   └── loading.tsx   # Board loading state
+│   │   └── orphaned-tasks/
+│   │       └── page.tsx      # Orphaned tasks management
+│   └── layout.tsx            # Dashboard layout wrapper
+├── ui/
+│   ├── boards/
+│   │   ├── board-card.tsx            # Board display card
+│   │   ├── create-board-button.tsx   # Board creation modal
+│   │   ├── delete-board-modal.tsx    # Board deletion with options
+│   │   ├── edit-board-modal.tsx      # Board editing
+│   │   └── board-settings-dropdown.tsx # Board actions menu
+│   ├── tasks/
+│   │   ├── task-list-optimistic.tsx  # Optimistic task list column
+│   │   ├── task-card-optimistic.tsx  # Draggable task card
+│   │   ├── task-board.tsx           # Kanban board container
+│   │   ├── board-content.tsx        # Board page content wrapper
+│   │   ├── create-task-button.tsx   # Task creation modal
+│   │   ├── edit-task-modal.tsx      # Task editing modal
+│   │   └── orphaned-task-card.tsx   # Special card for orphaned tasks
+│   └── shared/
+│       ├── button.tsx               # Reusable button component
+│       ├── expandable-search.tsx    # Search with expand animation
+│       └── pagination.tsx          # Pagination controls
+└── lib/
+    ├── actions.ts     # Server Actions for mutations
+    ├── data.ts        # Data fetching functions
+    ├── types.ts       # TypeScript type definitions
+    └── prisma.ts      # Prisma client configuration
 ```
 
-**Design Decisions:**
+### Data Flow Architecture
 
-- **RESTful conventions**: Standard HTTP methods for CRUD operations
-- **Nested vs flat routes**: Chose flat routes for flexibility
-- **PATCH over PUT**: Only update changed fields, more efficient
-- **Query parameters**: For filtering (e.g., `?boardId=123`)
-- **Consistent error responses**: All errors follow same structure
+```
+User Interaction
+       ↓
+Client Component (optional optimistic update)
+       ↓
+Server Action (validation + mutation)
+       ↓
+Prisma ORM
+       ↓
+PostgreSQL (Supabase)
+       ↓
+revalidatePath()
+       ↓
+UI Update (Server Component re-renders)
+```
 
-### Response Structure
+### State Management Strategy
+
+**1. Server State as Primary Source**
+- All data fetched in Server Components
+- Automatic revalidation after mutations
+- No client-side data cache needed
+
+**2. Optimistic Updates for UX**
+```typescript
+// In board-content.tsx
+const addTaskOptimistically = useCallback((tempTask: Partial<Task>) => {
+  const newTask: Task = {
+    id: `temp-${Date.now()}`,
+    ...tempTask
+  };
+  setTasks(prevTasks => [newTask, ...prevTasks]);
+  return (realTask: Task) => {
+    setTasks(prevTasks => 
+      prevTasks.map(t => t.id === newTask.id ? realTask : t)
+    );
+  };
+}, [board.id]);
+```
+
+**3. URL State for Filters**
+- Search queries stored in URL params
+- Enables bookmarking and sharing
+- Example: `/dashboard?query=design&page=2`
+
+**4. Local State for UI Only**
+- Modal open/close states
+- Form input values
+- Drag hover states
+
+## Server Actions Implementation
+
+### Core Server Actions
 
 ```typescript
-// Success
-{
-  data: T,
-  success: true
+// Board Management
+createBoard(formData: FormData)      // Create new board
+updateBoard(id: string, data: any)   // Update board details  
+deleteBoard(id: string, taskHandling: 'orphan' | 'transfer' | 'delete', targetBoardId?: string)
+
+// Task Management
+createTask(formData: FormData)       // Create task with validation
+updateTask(id: string, data: any)    // Update task details
+updateTaskStatus(taskId: string, status: TaskStatus) // Drag-drop status change
+deleteTask(id: string)               // Remove task
+assignTaskToBoard(taskId: string, boardId: string) // Reassign orphaned tasks
+```
+
+### Error Handling Pattern
+
+```typescript
+try {
+  // Operation
+  await prisma.task.create({ data });
+  
+  // Revalidate affected paths
+  revalidatePath('/dashboard');
+  revalidatePath(`/dashboard/board/${boardId}`);
+  
+  return { success: true, task: newTask };
+} catch (error) {
+  console.error('Database Error:', error);
+  return {
+    success: false,
+    message: 'Database Error: Failed to create task.'
+  };
 }
-
-// Error
-{
-  error: string,
-  success: false
-}
 ```
 
-## Frontend Architecture
+## Key Features Implementation
 
-### Component Structure
+### 1. Optimistic Task Creation
+- Task appears instantly in UI
+- Server processes in background
+- Updates with real ID when complete
+- No page reload required
 
+### 2. Drag-and-Drop Task Management
+- Built with native HTML5 drag/drop
+- Visual feedback during drag
+- Updates status on drop
+- Server action persists change
+
+### 3. Orphaned Tasks System
+- Tasks persist when board deleted
+- Special page at `/dashboard/board/orphaned-tasks`
+- Can reassign to any board
+- Shows in dashboard when orphans exist
+
+### 4. Board Deletion Options
+- **Keep tasks as orphaned** - Tasks become unassigned
+- **Transfer to another board** - Bulk reassignment
+- **Delete all tasks** - Complete removal
+
+### 5. Search Implementation
+- URL-based with `?query=` param
+- Server-side filtering in database
+- Searches board names and descriptions
+- Instant results without page reload
+
+## Performance Optimizations
+
+### 1. Database Query Optimization
+```typescript
+// Fetch all tasks once and filter in memory for orphans
+const allTasks = await prisma.task.findMany();
+const orphanedTasks = allTasks.filter(task => task.boardId === null);
 ```
-components/
-├── boards/
-│   ├── BoardCard.tsx      # Individual board display
-│   ├── BoardList.tsx       # List of boards
-│   └── CreateBoardForm.tsx # Board creation form
-├── tasks/
-│   ├── TaskCard.tsx        # Individual task display
-│   ├── TaskList.tsx        # List of tasks by status
-│   └── CreateTaskForm.tsx  # Task creation form
-└── ui/
-    ├── Button.tsx          # Reusable button
-    ├── Input.tsx           # Reusable input
-    └── Card.tsx            # Reusable card container
-```
 
-### State Management
+### 2. Optimistic Updates
+- Immediate UI feedback
+- Background server processing
+- Rollback on failure
 
-**Decision: React State + Server State**
+### 3. Component Architecture
+- Server Components for initial render
+- Client Components only when needed
+- Proper component boundaries
 
-- **Local state**: For UI state (modals, forms, loading)
-- **Server state**: Source of truth in database
-- **No global state management**: Not needed for this scope
-- **Optimistic updates**: Update UI immediately, rollback on error
-
-### Routing Strategy
-
-- **File-based routing**: Leveraging Next.js App Router
-- **Dynamic routes**: `/board/[id]` for board details
-- **API routes**: Co-located with pages for clarity
-
-## What Would I Change?
-
-### With More Time
-
-1. **Add Prisma migrations**: Proper migration files instead of `prisma push`
-2. **Implement caching**: Redis or in-memory cache for frequently accessed data
-3. **Add authentication**: User accounts and board ownership
-4. **Websockets**: Real-time updates across browsers
-5. **Better error handling**: Toast notifications, retry logic
-6. **Comprehensive testing**: Unit, integration, and E2E tests
-
-### Current Problems
-
-1. **No pagination**: Board and task lists could get very long
-2. **No search**: Hard to find specific boards or tasks
-3. **Basic validation**: Could be more robust on both client and server
-4. **No optimistic updates**: Page refreshes for some operations
-5. **Simple UI**: Functional but not polished
-
-### Production Differences
-
-1. **Database**: PostgreSQL or MySQL instead of SQLite
-2. **Authentication**: NextAuth.js or similar
-3. **Rate limiting**: Prevent API abuse
-4. **Monitoring**: Error tracking (Sentry), analytics
-5. **CI/CD**: Automated testing and deployment
-6. **Environment variables**: Proper secret management
-7. **Data validation**: Zod schemas for runtime validation
-8. **API versioning**: Support for backward compatibility
-9. **Internationalization**: Multi-language support
-10. **Accessibility**: ARIA labels, keyboard navigation
-
-## Performance Considerations
-
-### Current Optimizations
-- Server Components for initial page load
-- Dynamic imports for code splitting
-- Tailwind CSS for minimal CSS bundle
-
-### Future Optimizations
-- Image optimization with next/image
-- API response caching
-- Database query optimization
-- Client-side data caching with SWR or React Query
-- Bundle size analysis and optimization
+### 4. Efficient Re-renders
+- `useCallback` for stable function references
+- Targeted `revalidatePath` calls
+- Minimal client state
 
 ## Security Considerations
 
 ### Current Implementation
-- Input validation on API routes
-- SQL injection prevention via Prisma
-- XSS prevention via React
+- **Input validation** - All forms validate on server
+- **SQL injection protection** - Prisma parameterized queries
+- **XSS protection** - React auto-escapes output
+- **CSRF protection** - Next.js built-in for Server Actions
 
 ### Production Requirements
-- CSRF protection
-- Rate limiting
-- Input sanitization
-- Authentication and authorization
-- HTTPS enforcement
-- Security headers
-- Regular dependency updates
+- **Authentication** - Add NextAuth.js or Clerk
+- **Authorization** - Row-level security for multi-tenancy
+- **Rate limiting** - Prevent API abuse
+- **Audit logging** - Track all mutations
+- **Encryption** - Sensitive data at rest
+
+## Known Issues & Technical Debt
+
+### 1. Prisma Null Queries
+- Prisma doesn't handle `where: { boardId: null }` well
+- Workaround: Fetch all and filter in memory
+- Production fix: Use raw SQL or Prisma raw queries
+
+### 2. Height Management
+- Task columns use fixed heights (`h-[60vh]`)
+- Should be more responsive to viewport
+- Consider CSS Grid or Flexbox improvements
+
+### 3. Modal Background Consistency
+- All modals use `bg-black/50` overlay
+- Consistent across delete, edit, create modals
+
+### 4. Type Safety Gaps
+- Some `any` types in mapped data
+- Should use stricter typing throughout
+
+## Deployment Considerations
+
+### Environment Variables
+```env
+DATABASE_URL          # PostgreSQL connection string
+POSTGRES_PRISMA_URL   # Prisma-specific connection
+POSTGRES_URL_NON_POOLING  # Direct connection
+```
+
+### Database Migrations
+```bash
+npx prisma migrate dev    # Development
+npx prisma migrate deploy # Production
+npx prisma generate       # Generate client
+```
+
+### Build Process
+```bash
+pnpm install
+npx prisma generate
+pnpm build
+pnpm start
+```
+
+## Future Enhancements
+
+### Near Term
+- [ ] User authentication system
+- [ ] Real-time collaboration
+- [ ] File attachments on tasks
+- [ ] Task comments/activity log
+- [ ] Bulk task operations
+- [ ] Keyboard shortcuts
+
+### Long Term
+- [ ] API for third-party integrations
+- [ ] Mobile app
+- [ ] Advanced filtering and sorting
+- [ ] Custom fields
+- [ ] Automation rules
+- [ ] Analytics dashboard
+
+## Lessons Learned
+
+### What Worked Well
+- **Optimistic updates** - Greatly improved perceived performance
+- **Server Actions** - Simplified data mutations without API routes
+- **Supabase** - Quick setup with generous free tier
+- **Component organization** - Clear separation by feature
+
+### Challenges Faced
+- **Prisma null handling** - Required workarounds for orphaned tasks
+- **Height management** - CSS complexity for full-height layouts
+- **Type inference** - Complex types with Prisma relations
+- **State synchronization** - Balancing optimistic and server state
+
+### Key Decisions That Paid Off
+1. **SetNull instead of Cascade** - Preserved data integrity
+2. **Optimistic updates from start** - Better UX throughout
+3. **URL-based search** - Shareable and bookmarkable
+4. **Modular component structure** - Easy to maintain and extend
+
+## Conclusion
+
+This architecture successfully implements a full-featured task management system with:
+- **Modern React patterns** - Server Components, Server Actions
+- **Type safety** - End-to-end TypeScript
+- **Great UX** - Optimistic updates, drag-and-drop
+- **Scalable structure** - Clear separation of concerns
+- **Production ready** - With minor enhancements needed
+
+The codebase is maintainable, performant, and ready for future feature additions while providing an excellent developer experience.

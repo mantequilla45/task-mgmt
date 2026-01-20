@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Task } from '@/app/lib/types';
 import TaskBoard from './task-board';
 import CreateTaskButton from './create-task-button';
@@ -16,6 +16,11 @@ interface BoardContentProps {
 
 export default function BoardContent({ board, initialTasks, allBoards }: BoardContentProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  
+  // Update tasks when search results change
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
   
   // Add task optimistically to the UI
   const addTaskOptimistically = useCallback((tempTask: Partial<Task>) => {

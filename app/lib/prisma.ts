@@ -20,9 +20,15 @@ if (!connectionString) {
 // Supabase uses self-signed certificates in some environments
 const pool = new Pool({ 
   connectionString,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: connectionString?.includes('localhost') || connectionString?.includes('127.0.0.1') 
+    ? false 
+    : {
+        rejectUnauthorized: false,
+        // For Supabase compatibility
+        ca: undefined,
+        cert: undefined,
+        key: undefined
+      }
 });
 const adapter = new PrismaPg(pool);
 
